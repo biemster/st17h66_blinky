@@ -1,4 +1,4 @@
-# Lenze_blinky
+# ST17H66_blinky
 Minimal code to blink the LED on Lenze st17h66 based tags
 
 It will start as a Keil project, but with the aim to move to GCC
