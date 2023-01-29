@@ -2,13 +2,12 @@
 import sys,time
 import base64
 
-jump_table = bytearray()
 irom1 = bytearray()
 
 with open('./bin/Lenze_blinky.hex') as f:
     # hex file order is assumed to be ER_ROM_XIP - JUMP_TABLE - ER_IROM1
-    sections = ['JUMP_TABLE','ER_IROM1']
-    infiles = [jump_table,irom1]
+    sections = ['ER_IROM1']
+    infiles = [irom1]
     infile_current = -1
     inbuf = None
     for line in f:
@@ -22,7 +21,7 @@ with open('./bin/Lenze_blinky.hex') as f:
 
 c0 = bytearray() # hexf header
 
-c0.extend(bytearray.fromhex('02000000FFFFFFFF3818FF1FFFFFFFFF')) # RF only code has only 2 ihex sections
+c0.extend(bytearray.fromhex('01000000FFFFFFFF3818FF1FFFFFFFFF')) # blinky has only 1 ihex section
 c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
 c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
 c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
@@ -38,16 +37,11 @@ c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
 c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
 c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
 c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('00500000FFFF00000000FF1FFFFFFFFF'))
-c0.extend(bytearray.fromhex('14540000FFFF00003818FF1FFFFFFFFF'))
+c0.extend(bytearray.fromhex('00900000FFFF00003818FF1FFFFFFFFF'))
 
-c0[-28:-26] = int.to_bytes(len(jump_table), 2, 'little') # length JUMP_TABLE
 c0[-12:-10] = int.to_bytes(len(irom1), 2, 'little') # length ER_IROM1
 
-c1 = bytearray() # JUMP_TABLE + ER_IROM1
-c1.extend(jump_table)
-c1.extend(bytearray.fromhex('0' *16))
-c1.extend(irom1)
+c1 = irom1
 
 c = [c0,c1]
 #c_test = c0
@@ -58,8 +52,8 @@ c = [c0,c1]
 #        row = ':1' + int.to_bytes(j, 2, 'big').hex().upper() + '000' + c_test[i:i+16].hex().upper()
 #        f.write(row)
 #        f.write(hex((sum(bytearray.fromhex(row[1:])) % 256) - (1<<8))[-2:].upper().replace('X','0') + '\n') #UGLY!
-#        if j == 529:
-#            j = 1280
+#        if j == 528:
+#            j = 2304
 #        else:
 #            j += 1
 #    f.close()
@@ -89,7 +83,7 @@ cmds.append(b'spifs 0 1 3 0 ')
 cmds.append(b'sfmod 2 2 ')
 cmds.append(b'cpnum ffffffff ')
 cmds.append(b'cpbin c0 002000 ' + b'%x' % len(c0) + b' 11002000')
-cmds.append(b'cpbin c1 005000 ' + b'%x' % len(c1) + b' 11005000')
+cmds.append(b'cpbin c1 009000 ' + b'%x' % len(c1) + b' 11005000')
 
 for cmd in cmds:
     uart.write(cmd)
