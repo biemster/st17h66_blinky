@@ -18,7 +18,7 @@ CFLAGS += -MD -MP -MT $(BUILD)/$(*F).o -MF $(BUILD)/$(@F).d
 
 LDFLAGS += -mcpu=cortex-m0 -mthumb -mthumb-interwork
 LDFLAGS += -Wl,--gc-sections
-LDFLAGS += -Wl,--script=./RTE/Device/ARMCM0/phy6202.ld
+LDFLAGS += -Wl,--script=./RTE/Device/ARMCM0/st17h66.ld
 LDFLAGS += -Wl,--just-symbols=./bb_rom_sym_m0.gcc
 
 INCLUDES += \

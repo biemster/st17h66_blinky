@@ -1,63 +1,15 @@
 /* Linker script to configure memory regions. */
 MEMORY
 {
-  /* In mirror mode, flash content is copied to RAM and progrm execute in RAM */
-  FLASH (rx)  : ORIGIN = 0x1FFF4000, LENGTH = 64K /*Mirror mode : flash is copied to RAM for execution*/
-  RAM   (rwx) : ORIGIN = 0x20004000, LENGTH = 48K
-
-  JUMP_TABLE (rwx)       : ORIGIN = 0x1FFF0800, LENGTH = 1K
-  GLOBAL_CONFIG (rwx)    : ORIGIN = 0x1FFF0C00, LENGTH = 1K
-  
+  RAM   (rwx) : ORIGIN = 0x1FFF6000, LENGTH = 0x2000
+  FLASH (rx)  : ORIGIN = 0x1FFF8000, LENGTH = 0x1F40
 }
 
 
-/* Linker script to place sections and symbol values. Should be used together
- * with other linker script that defines memory regions FLASH and RAM.
- * It references following symbols, which must be defined in code:
- *   Reset_Handler : Entry of reset handler
- *
- * It defines following symbols, which code can use without definition:
- *   __exidx_start
- *   __exidx_end
- *   __copy_table_start__
- *   __copy_table_end__
- *   __zero_table_start__
- *   __zero_table_end__
- *   __etext
- *   __data_start__
- *   __preinit_array_start
- *   __preinit_array_end
- *   __init_array_start
- *   __init_array_end
- *   __fini_array_start
- *   __fini_array_end
- *   __data_end__
- *   __bss_start__
- *   __bss_end__
- *   __end__
- *   end
- *   __HeapLimit
- *   __StackLimit
- *   __StackTop
- *   __stack
- */
 ENTRY(Reset_Handler)
 
 SECTIONS
 {
-        /* Store jump table between ROM/lib and code at a fixed address */
-        .jump_table_mem_area :
-        {
-                KEEP(*(.jump_table_mem_area))
-        } > JUMP_TABLE
-
-        /* Store global config at a fixed address */
-        .global_config_area :
-        {
-                KEEP(*(.global_config_area))
-        } > GLOBAL_CONFIG
-
-
         .text :
         {
                 KEEP(*(.vectors))
@@ -96,40 +48,6 @@ SECTIONS
                 *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         } > FLASH
         __exidx_end = .;
-
-        /* To copy multiple ROM to RAM sections,
-         * uncomment .copy.table section and,
-         * define __STARTUP_COPY_MULTIPLE in startup_ARMCMx.S */
-        /*
-        .copy.table :
-        {
-                . = ALIGN(4);
-                __copy_table_start__ = .;
-                LONG (__etext)
-                LONG (__data_start__)
-                LONG (__data_end__ - __data_start__)
-                LONG (__etext2)
-                LONG (__data2_start__)
-                LONG (__data2_end__ - __data2_start__)
-                __copy_table_end__ = .;
-        } > FLASH
-        */
-
-        /* To clear multiple BSS sections,
-         * uncomment .zero.table section and,
-         * define __STARTUP_CLEAR_BSS_MULTIPLE in startup_ARMCMx.S */
-        /*
-        .zero.table :
-        {
-                . = ALIGN(4);
-                __zero_table_start__ = .;
-                LONG (__bss_start__)
-                LONG (__bss_end__ - __bss_start__)
-                LONG (__bss2_start__)
-                LONG (__bss2_end__ - __bss2_start__)
-                __zero_table_end__ = .;
-        } > FLASH
-        */
 
         /* Location counter can end up 2byte aligned with narrow Thumb code but
            __etext is assumed by startup code to be the LMA of a section in RAM

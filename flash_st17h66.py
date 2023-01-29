@@ -2,9 +2,18 @@
 import sys,time
 import base64
 
-irom1 = bytearray()
+compiler = ['ARM','GCC'][1]
+if compiler == 'ARM':
+    infile = './bin/Lenze_blinky.hex'
+    FF = '3818'
+    print(f'Flashing firmware produced with Keil: {infile}')
+elif compiler == 'GCC':
+    infile = './build/Blinky.hex'
+    FF = '0080'
+    print(f'Flashing firmware produced with GCC: {infile}')
 
-with open('./bin/Lenze_blinky.hex') as f:
+irom1 = bytearray()
+with open(infile) as f:
     # hex file order is assumed to be ER_ROM_XIP - JUMP_TABLE - ER_IROM1
     sections = ['ER_IROM1']
     infiles = [irom1]
@@ -21,23 +30,23 @@ with open('./bin/Lenze_blinky.hex') as f:
 
 c0 = bytearray() # hexf header
 
-c0.extend(bytearray.fromhex('01000000FFFFFFFF3818FF1FFFFFFFFF')) # blinky has only 1 ihex section
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex('00900000FFFF00003818FF1FFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'01000000FFFFFFFF{FF}FF1FFFFFFFFF')) # blinky has only 1 ihex section
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex(f'00900000FFFF0000{FF}FF1FFFFFFFFF'))
 
 c0[-12:-10] = int.to_bytes(len(irom1), 2, 'little') # length ER_IROM1
 
