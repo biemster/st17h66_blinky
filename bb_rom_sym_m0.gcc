@@ -1,0 +1,3 @@
+clk_init = 0x0000a5ed;
+enableSleep = 0x0000aead;
+g_system_clk = 0x1fff0a4a;

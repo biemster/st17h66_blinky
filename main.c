@@ -10,8 +10,8 @@
 #define write_reg(addr,data)             (*(volatile unsigned int*)(addr)=(unsigned int)(data))
 #define read_reg(addr)                   (*(volatile unsigned int*)(addr))
 #define subWriteReg(addr,high,low,value) write_reg(addr,read_reg(addr)&\
-										 (~((((unsigned int)1<<((high)-(low)+1))-1)<<(low)))|\
-										 ((unsigned int)(value)<<(low)))
+										 ((~((((unsigned int)1<<((high)-(low)+1))-1)<<(low)))|\
+										 ((unsigned int)(value)<<(low))))
 																				 
 #define AP_APB0_BASE (0x40000000UL)
 #define AP_AON_BASE (AP_APB0_BASE + 0xF000)/*aon*/
@@ -233,7 +233,6 @@ static gpio_Ctx_t m_gpioCtx = {
 /*********************************************************************
 	EXTERNAL VARIABLES
 */
-extern uint32_t  __initial_sp;
 extern volatile sysclk_t g_system_clk;
 extern int clk_init(sysclk_t h_system_clk_sel);
 extern void enableSleep(void);
