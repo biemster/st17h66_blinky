@@ -9,7 +9,7 @@ CC = arm-none-eabi-gcc
 OBJCOPY = arm-none-eabi-objcopy
 SIZE = arm-none-eabi-size
 
-CFLAGS += -W -Wall --std=gnu99
+CFLAGS += -W -Wall --std=gnu99 -O3
 CFLAGS += -fno-diagnostics-show-caret
 CFLAGS += -fdata-sections -ffunction-sections
 CFLAGS += -funsigned-char -funsigned-bitfields
@@ -33,8 +33,7 @@ SRCS += \
 
 
 DEFINES += \
-  -D__GCC \
-  -DARMCM0
+  -D__GCC
 
 
 CFLAGS += $(INCLUDES) $(DEFINES)
