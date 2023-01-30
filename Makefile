@@ -22,18 +22,17 @@ LDFLAGS += -Wl,--script=./RTE/Device/ARMCM0/st17h66.ld
 LDFLAGS += -Wl,--just-symbols=./bb_rom_sym_m0.gcc
 
 INCLUDES += \
-  -I. \
-  -I$(CMSIS_PATH)/Device/ARM/ARMCM0/Include \
-  -I$(CMSIS_PATH)/CMSIS/Core/Include
+	-I$(CMSIS_PATH)/Device/ARM/ARMCM0/Include \
+	-I$(CMSIS_PATH)/CMSIS/Core/Include
 
 SRCS += \
-  ./main.c \
-  ./RTE/Device/ARMCM0/startup_ARMCM0.c \
-  ./RTE/Device/ARMCM0/system_ARMCM0.c
+	./main.c \
+	./RTE/Device/ARMCM0/startup_ARMCM0.c \
+	./RTE/Device/ARMCM0/system_ARMCM0.c
 
 
 DEFINES += \
-  -D__GCC
+	-D__GCC
 
 
 CFLAGS += $(INCLUDES) $(DEFINES)

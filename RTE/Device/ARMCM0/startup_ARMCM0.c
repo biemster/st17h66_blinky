@@ -30,7 +30,7 @@
 #include "ARMCM0.h"
 
 /*----------------------------------------------------------------------------
-  Linker generated Symbols
+	Linker generated Symbols
  *----------------------------------------------------------------------------*/
 extern uint32_t __etext;
 extern uint32_t __data_start__;
@@ -40,23 +40,23 @@ extern uint32_t __bss_end__;
 extern uint32_t __StackTop;
 
 /*----------------------------------------------------------------------------
-  Exception / Interrupt Handler Function Prototype
+	Exception / Interrupt Handler Function Prototype
  *----------------------------------------------------------------------------*/
 typedef void (*pFunc)(void);
 
 /*----------------------------------------------------------------------------
-  External References
+	External References
  *----------------------------------------------------------------------------*/
 extern void _start(void) __attribute__((noreturn)); /* PreeMain (C library entry point) */
 
 /*----------------------------------------------------------------------------
-  Internal References
+	Internal References
  *----------------------------------------------------------------------------*/
 void Default_Handler(void) __attribute__((noreturn));
 void Reset_Handler(void) __attribute__((noreturn));
 
 /*----------------------------------------------------------------------------
-  User Initial Stack & Heap
+	User Initial Stack & Heap
  *----------------------------------------------------------------------------*/
 //<h> Stack Configuration
 //  <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
@@ -73,7 +73,7 @@ static uint8_t heap[__HEAP_SIZE] __attribute__((aligned(8), used, section(".heap
 #endif
 
 /*----------------------------------------------------------------------------
-  Exception / Interrupt Handler
+	Exception / Interrupt Handler
  *----------------------------------------------------------------------------*/
 /* Exceptions */
 void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
@@ -107,101 +107,89 @@ void CPU_CLCD_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SPI_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 
 /*----------------------------------------------------------------------------
-  Exception / Interrupt Vector table
+	Exception / Interrupt Vector table
  *----------------------------------------------------------------------------*/
 extern const pFunc __Vectors[48];
 const pFunc __Vectors[48] __attribute__((used, section(".vectors"))) = {
-    (pFunc)(&__StackTop), /*     Initial Stack Pointer */
-    Reset_Handler,        /*     Reset Handler */
-    NMI_Handler,          /* -14 NMI Handler */
-    HardFault_Handler,    /* -13 Hard Fault Handler */
-    0,                    /*     Reserved */
-    0,                    /*     Reserved */
-    0,                    /*     Reserved */
-    0,                    /*     Reserved */
-    0,                    /*     Reserved */
-    0,                    /*     Reserved */
-    0,                    /*     Reserved */
-    SVC_Handler,          /*  -5 SVCall Handler */
-    0,                    /*     Reserved */
-    0,                    /*     Reserved */
-    PendSV_Handler,       /*  -2 PendSV Handler */
-    SysTick_Handler,      /*  -1 SysTick Handler */
+	(pFunc)(&__StackTop), /*     Initial Stack Pointer */
+	Reset_Handler,        /*     Reset Handler */
+	NMI_Handler,          /* -14 NMI Handler */
+	HardFault_Handler,    /* -13 Hard Fault Handler */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	SVC_Handler,          /*  -5 SVCall Handler */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	PendSV_Handler,       /*  -2 PendSV Handler */
+	SysTick_Handler,      /*  -1 SysTick Handler */
 
-    /* Interrupts */
-    WDT_IRQHandler,   /*   0 Interrupt 0 */
-    RTC_IRQHandler,   /*   1 Interrupt 1 */
-    TIM0_IRQHandler,  /*   2 Interrupt 2 */
-    TIM2_IRQHandler,  /*   3 Interrupt 3 */
-    MCIA_IRQHandler,  /*   4 Interrupt 4 */
-    MCIB_IRQHandler,  /*   5 Interrupt 5 */
-    UART0_IRQHandler, /*   6 Interrupt 6 */
-    UART1_IRQHandler, /*   7 Interrupt 7 */
-    UART2_IRQHandler, /*   8 Interrupt 8 */
-    UART3_IRQHandler, /*   9 Interrupt 9 */
-    UART4_IRQHandler, /*   10 Interrupt 10 */
-    AACI_IRQHandler,  /*   10 Interrupt 10 */
-    CLCD_IRQHandler,
-    ENET_IRQHandler,
-    USBDC_IRQHandler,
-    USBHC_IRQHandler,
-    CHLCD_IRQHandler,
-    FLEXRAY_IRQHandler,
-    CAN_IRQHandler,
-    LIN_IRQHandler,
-    I2C_IRQHandler,
-    CPU_CLCD_IRQHandler,
-    SPI_IRQHandler,
+	/* Interrupts */
+	WDT_IRQHandler,   /*   0 Interrupt 0 */
+	RTC_IRQHandler,   /*   1 Interrupt 1 */
+	TIM0_IRQHandler,  /*   2 Interrupt 2 */
+	TIM2_IRQHandler,  /*   3 Interrupt 3 */
+	MCIA_IRQHandler,  /*   4 Interrupt 4 */
+	MCIB_IRQHandler,  /*   5 Interrupt 5 */
+	UART0_IRQHandler, /*   6 Interrupt 6 */
+	UART1_IRQHandler, /*   7 Interrupt 7 */
+	UART2_IRQHandler, /*   8 Interrupt 8 */
+	UART3_IRQHandler, /*   9 Interrupt 9 */
+	UART4_IRQHandler, /*   10 Interrupt 10 */
+	AACI_IRQHandler,  /*   10 Interrupt 10 */
+	CLCD_IRQHandler,
+	ENET_IRQHandler,
+	USBDC_IRQHandler,
+	USBHC_IRQHandler,
+	CHLCD_IRQHandler,
+	FLEXRAY_IRQHandler,
+	CAN_IRQHandler,
+	LIN_IRQHandler,
+	I2C_IRQHandler,
+	CPU_CLCD_IRQHandler,
+	SPI_IRQHandler,
 };
 
 /*----------------------------------------------------------------------------
-  Reset Handler called on controller reset
+	Reset Handler called on controller reset
  *----------------------------------------------------------------------------*/
-void Reset_Handler(void)
-{
-    uint32_t *pSrc, *pDest;
-    uint32_t *pTable __attribute__((unused));
-    
-    SystemInit(); /* CMSIS System Initialization */
-    
-    pSrc = &__etext;
-    pDest = &__data_start__;
-    for (; pDest < &__data_end__;) {
-        *pDest++ = *pSrc++;
-    }
+void Reset_Handler(void) {
+	uint32_t *pSrc, *pDest;
+	uint32_t *pTable __attribute__((unused));
+	
+	SystemInit(); /* CMSIS System Initialization */
+	
+	pSrc = &__etext;
+	pDest = &__data_start__;
+	for (; pDest < &__data_end__;) {
+			*pDest++ = *pSrc++;
+	}
 
-    pDest = &__bss_start__;
-    for (; pDest < &__bss_end__;) {
-        *pDest++ = 0UL;
-    }
+	pDest = &__bss_start__;
+	for (; pDest < &__bss_end__;) {
+			*pDest++ = 0UL;
+	}
 
-    _start(); /* Enter PreeMain (C library entry point) */
+	_start(); /* Enter PreeMain (C library entry point) */
 }
 
 /*----------------------------------------------------------------------------
-  Default Handler for Exceptions / Interrupts
+	Default Handler for Exceptions / Interrupts
  *----------------------------------------------------------------------------*/
-void Default_Handler(void)
-{
-//    BM_SET(REG_FMUX_EN_FUC(GPIO_P14), Bit_DISABLE); //set bit
-//    BM_SET(reg_gpio_ioe_porta, OEN);
-//    while (1)
-//    {
-//        //Toggle GPIO 2/3 PWM
-//        BM_SET(reg_gpio_swporta_dr, GPIO_P14);
-//        BM_SET(reg_gpio_swporta_dr, GPIO_P14);
-//        BM_CLR(reg_gpio_swporta_dr, GPIO_P14);
-//    }
-    while (1);
+void Default_Handler(void) {
+	while (1);
 }
 
 /*----------------------------------------------------------------------------
-  _exit implementation for libc
+	_exit implementation for libc
  *----------------------------------------------------------------------------*/
-void _exit(int status)
-{
-    (void)status;
-    while (1);
+void _exit(int status) {
+	(void)status;
+	while (1);
 }
 
 // ROM lib expect __initial_sp symbol to be defined

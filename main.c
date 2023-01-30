@@ -140,8 +140,7 @@ typedef enum  _SYSCLK_SEL {
 	SYS_CLK_NUM         = 8,
 } sysclk_t;
 
-typedef enum
-{
+typedef enum {
 	CLK_32K_XTAL        = 0,
 	CLK_32K_RCOSC       = 1,
 
@@ -192,7 +191,7 @@ typedef struct {
 	volatile uint32_t swporta_dr;    //0x00
 	volatile uint32_t swporta_ddr;   //0x04
 	volatile uint32_t swporta_ctl;   //0x08
-    uint32_t reserved8[9];           //0x18-0x2c portC&D
+	uint32_t reserved8[9];           //0x18-0x2c portC&D
 	volatile uint32_t inten;         //0x30
 	volatile uint32_t intmask;       //0x34
 	volatile uint32_t inttype_level; //0x38
@@ -202,10 +201,10 @@ typedef struct {
 	volatile uint32_t debounce;      //0x48
 	volatile  uint32_t porta_eoi;    //0x4c
 	volatile  uint32_t ext_porta;    //0x50
-    uint32_t reserved9[3];           //0x58 0x5c
+	uint32_t reserved9[3];           //0x58 0x5c
 	volatile uint32_t ls_sync;       //0x60
 	volatile  uint32_t id_code;      //0x64
-    uint32_t reserved10[1];          //0x68
+	uint32_t reserved10[1];          //0x68
 	volatile  uint32_t ver_id_code;  //0x6c
 	volatile  uint32_t config_reg2;  //0x70
 	volatile  uint32_t config_reg1;  //0x74
@@ -329,8 +328,7 @@ void hal_gpio_init(void) {
 	m_gpioCtx.state = 1;
 }
 
-void hal_gpio_fmux(gpio_pin_e pin, bit_action_e value)
-{
+void hal_gpio_fmux(gpio_pin_e pin, bit_action_e value) {
 	if(value) {
 		AP_IOMUX->full_mux0_en |= BIT(pin);
 	}
@@ -359,7 +357,7 @@ void hal_gpio_cfg_analog_io(gpio_pin_e pin, bit_action_e value) {
 }
 
 void hal_gpio_pin_init(gpio_pin_e pin, gpio_dir_t type) {
-	  hal_gpio_fmux(pin,Bit_DISABLE);
+	hal_gpio_fmux(pin,Bit_DISABLE);
 
 	if((pin == P2) || (pin == P3)) {
 		hal_gpio_pin2pin3_control(pin,1);
