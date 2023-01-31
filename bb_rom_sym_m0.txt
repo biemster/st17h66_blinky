@@ -1,4 +1,6 @@
 #<SYMDEFS># ARM Linker, 5050041: Last Updated: Tue Jun 16 11:44:23 2020
+0x00008901 T WaitRTCCount
 0x0000a5ed T clk_init
 0x0000aead T enableSleep
+0x00016b45 T setSleepMode
 0x1fff0a4a D g_system_clk

@@ -1,3 +1,5 @@
+WaitRTCCount = 0x00008901;
 clk_init = 0x0000a5ed;
 enableSleep = 0x0000aead;
+setSleepMode = 0x00016b45;
 g_system_clk = 0x1fff0a4a;

@@ -146,6 +146,12 @@ typedef enum {
 
 } CLK32K_e;
 
+typedef enum {
+	MCU_SLEEP_MODE,
+	SYSTEM_SLEEP_MODE,
+	SYSTEM_OFF_MODE
+} Sleep_Mode;
+
 typedef struct {
 	volatile uint32_t PWROFF;        //0x00
 	volatile uint32_t PWRSLP;        //0x04
@@ -235,6 +241,8 @@ static gpio_Ctx_t m_gpioCtx = {
 extern volatile sysclk_t g_system_clk;
 extern int clk_init(sysclk_t h_system_clk_sel);
 extern void enableSleep(void);
+extern void setSleepMode(Sleep_Mode mode);
+extern void WaitRTCCount(uint32_t rtcDelyCnt);
 
 
 void hal_pwrmgr_RAM_retention_set(uint32_t sram) {
@@ -321,6 +329,7 @@ static void hal_init(void) {
 	clk_init(g_system_clk); //system init
 	hal_rtc_clock_config((CLK32K_e)g_clk32K_config);
 	enableSleep();
+	setSleepMode(SYSTEM_SLEEP_MODE);
 }
 
 void hal_gpio_init(void) {
@@ -393,8 +402,12 @@ void app_main() {
 	// LED is on pin 3
 	gpio_pin_e pin = P3;
 	hal_gpioretention_register(pin);
-	hal_gpio_write(pin,1);
-	while(1);
+	int pin_status = 0;
+	while(1) {
+		pin_status = (pin_status +1) %2;
+		hal_gpio_write(pin, pin_status);
+		WaitRTCCount(10000);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
