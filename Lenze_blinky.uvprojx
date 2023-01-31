@@ -373,7 +373,7 @@
             <ScatterFile>.\scatter_load.sct</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
-            <Misc>.\bb_rom_sym_m0.txt</Misc>
+            <Misc>.\bb_rom_sym_m0.txt --keep=jump_table_base --keep=global_config</Misc>
             <LinkerInputFile></LinkerInputFile>
             <DisabledWarnings></DisabledWarnings>
           </LDads>

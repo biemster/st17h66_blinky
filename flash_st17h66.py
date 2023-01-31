@@ -2,7 +2,7 @@
 import sys,time
 import base64
 
-compiler = ['ARM','GCC'][1]
+compiler = ['ARM','GCC'][0]
 if compiler == 'ARM':
     infile = './bin/Lenze_blinky.hex'
     FF = '3818'

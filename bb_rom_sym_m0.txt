@@ -1,4 +1,20 @@
 #<SYMDEFS># ARM Linker, 5050041: Last Updated: Tue Jun 16 11:44:23 2020
+0x00008901 T WaitRTCCount
 0x0000a5ed T clk_init
+0x0000a975 T drv_disable_irq
+0x0000a99d T drv_enable_irq
 0x0000aead T enableSleep
+0x00010add T ll_hw_clr_irq
+0x00014aed T osal_init_system
+0x00014b3d T osal_mem_alloc
+0x00014cb5 T osal_mem_set_heap
+0x00014d15 T osal_memset
+0x00014fa5 T osal_pwrmgr_device
+0x0001520d T osal_set_event
+0x00015285 T osal_start_system
+0x0001528b T osal_start_timerEx
+0x00015cc9 T read_current_fine_time
+0x00016b45 T setSleepMode
+0x000172cd T spif_release_deep_sleep
+0x00017349 T spif_set_deep_sleep
 0x1fff0a4a D g_system_clk
