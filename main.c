@@ -3,8 +3,12 @@
 
 #ifdef __GCC
 	#define ALIGN4_U8 _Alignas(4) uint8_t
+	#define JUMP_TABLE_MEM_AREA ".jump_table_mem_area"
+	#define GLOBAL_CONFIG_AREA ".global_config_area"
 #else
 	#define ALIGN4_U8 __align(4) uint8_t
+	#define JUMP_TABLE_MEM_AREA "jump_table_mem_area"
+	#define GLOBAL_CONFIG_AREA "global_config_area"
 #endif
 
 #define write_reg(addr,data)             (*(volatile unsigned int*)(addr)=(unsigned int)(data))
@@ -12,7 +16,9 @@
 #define subWriteReg(addr,high,low,value) write_reg(addr,read_reg(addr)&\
 										 ((~((((unsigned int)1<<((high)-(low)+1))-1)<<(low)))|\
 										 ((unsigned int)(value)<<(low))))
-																				 
+
+#define JUMPTABLE_BASE_ADDR 0x1fff0000
+#define CONFIG_BASE_ADDR 0x1fff0400
 #define AP_APB0_BASE (0x40000000UL)
 #define AP_AON_BASE (AP_APB0_BASE + 0xF000)/*aon*/
 #define AP_AON ((AP_AON_TypeDef  *) AP_AON_BASE)
@@ -21,13 +27,36 @@
 #define AP_GPIOA_BASE (AP_APB0_BASE + 0x8000)/*gpio*/
 #define AP_GPIO ((AP_GPIO_TypeDef *) AP_GPIOA_BASE)
 
+#define __NVIC_PRIO_BITS  2U /* Number of Bits used for Priority Levels */
+#define IRQ_PRIO_REALTIME 0
+#define IRQ_PRIO_HIGH     1
 
 #define BIT(n) (1ul << (n))
 #define RET_SRAM0 BIT(0)  /*32K, 0x1fff0000~0x1fff7fff*/
 #define RET_SRAM1 BIT(1)  /*16K, 0x1fff8000~0x1fffbfff*/
 #define RET_SRAM2 BIT(2)  /*16K, 0x1fffc000~0x1fffffff*/
 
+#define DCDC_CONFIG_SETTING(x) subWriteReg(0x4000f014,18,15, (0x0f&(x)))
+#define DCDC_REF_CLK_SETTING(x) subWriteReg(0x4000f014,25,25, (0x01&(x)))
+#define DIG_LDO_CURRENT_SETTING(x) subWriteReg(0x4000f014,22,21, (0x03&(x)))
+#define HAL_PWRMGR_RAM_RETENTION_SET(x) subWriteReg(0x4000f01c,21,17, (((x) & 0xffffffe0) ? 0x00 : (x)))
+#define HAL_PWRMGR_LOWCURRENTLDO_ENABLE(x) subWriteReg(0x4000f014,26,26, (x));
+#define ENABLE_SOFTWARE_CONTROL(x) subWriteReg(&(AP_AON->PMCTL2_0),6,6, (x));
+#define RTC_TICK_CURRENT (*(volatile uint32_t*) 0x4000f028)
+#define SET_SLEEP_FLAG (*(volatile uint32_t*) 0x4000f0a8 |= 1)
+#define UNSET_SLEEP_FLAG (*(volatile uint32_t*) 0x4000f0a8 &= ~1)
+#define ENTER_SYSTEM_SLEEP_MODE (*(volatile uint32_t*) 0x4000f004 = 0xa5a55a5a)
+#define ENTER_SYSTEM_OFF_MODE (*(volatile uint32_t*) 0x4000f000 = 0x5a5aa5a5)
+
+#define SOFT_PARAMETER_NUM 256
 #define NUMBER_OF_PINS 23
+#define MSEC 32 // 32k RTCCounts is about a second (32kHz clock right?)
+#define SEC 32768
+
+
+//uint32_t* jump_table_base[256] __attribute__((section(JUMP_TABLE_MEM_AREA))) = {0};
+//uint32_t global_config[SOFT_PARAMETER_NUM] __attribute__((section(GLOBAL_CONFIG_AREA))) __attribute__((used)) = {0};
+
 
 typedef enum {
 	GPIO_P00   =   0,    P0  =  GPIO_P00,
@@ -143,7 +172,6 @@ typedef enum  _SYSCLK_SEL {
 typedef enum {
 	CLK_32K_XTAL        = 0,
 	CLK_32K_RCOSC       = 1,
-
 } CLK32K_e;
 
 typedef enum {
@@ -197,23 +225,23 @@ typedef struct {
 	volatile uint32_t swporta_dr;    //0x00
 	volatile uint32_t swporta_ddr;   //0x04
 	volatile uint32_t swporta_ctl;   //0x08
-	uint32_t reserved8[9];           //0x18-0x2c portC&D
+	uint32_t reserved1[9];           //0x18-0x2c portC&D
 	volatile uint32_t inten;         //0x30
 	volatile uint32_t intmask;       //0x34
 	volatile uint32_t inttype_level; //0x38
 	volatile uint32_t int_polarity;  //0x3c
-	volatile  uint32_t int_status;   //0x40
+	volatile uint32_t int_status;   //0x40
 	volatile uint32_t raw_instatus;  //0x44
 	volatile uint32_t debounce;      //0x48
-	volatile  uint32_t porta_eoi;    //0x4c
-	volatile  uint32_t ext_porta;    //0x50
-	uint32_t reserved9[3];           //0x58 0x5c
+	volatile uint32_t porta_eoi;    //0x4c
+	volatile uint32_t ext_porta;    //0x50
+	uint32_t reserved2[3];           //0x58 0x5c
 	volatile uint32_t ls_sync;       //0x60
-	volatile  uint32_t id_code;      //0x64
-	uint32_t reserved10[1];          //0x68
-	volatile  uint32_t ver_id_code;  //0x6c
-	volatile  uint32_t config_reg2;  //0x70
-	volatile  uint32_t config_reg1;  //0x74
+	volatile uint32_t id_code;      //0x64
+	uint32_t reserved3[1];          //0x68
+	volatile uint32_t ver_id_code;  //0x6c
+	volatile uint32_t config_reg2;  //0x70
+	volatile uint32_t config_reg1;  //0x74
 } AP_GPIO_TypeDef;
 
 
@@ -234,29 +262,19 @@ static gpio_Ctx_t m_gpioCtx = {
 	.pin_assignments = {0,},
 };
 
-
 /*********************************************************************
 	EXTERNAL VARIABLES
 */
+extern uint32_t  __initial_sp;
 extern volatile sysclk_t g_system_clk;
 extern int clk_init(sysclk_t h_system_clk_sel);
+extern void drv_irq_init(void);
+extern int drv_enable_irq(void);
 extern void enableSleep(void);
+extern void enterSleepProcess(uint32_t time);
 extern void setSleepMode(Sleep_Mode mode);
 extern void WaitRTCCount(uint32_t rtcDelyCnt);
 
-
-void hal_pwrmgr_RAM_retention_set(uint32_t sram) {
-	uint32_t sramRet_config = sramRet_config;
-	if(sram & 0xffffffe0) {
-		sramRet_config = 0x00;
-	}
-	subWriteReg(0x4000f01c,21,17,sramRet_config);
-}
-
-
-void hal_pwrmgr_LowCurrentLdo_enable(void) {
-	subWriteReg(0x4000f014,26,26, 1);
-}
 
 void hal_gpio_pull_set(gpio_pin_e pin, gpio_pupd_e type) {
 	uint8_t i = c_gpio_pull[pin].reg_i;
@@ -291,17 +309,11 @@ static void hal_low_power_io_init(void) {
 		hal_gpio_pull_set(ioInit[i].pin,ioInit[i].type);
 	}
 
-	#define DCDC_CONFIG_SETTING(x) subWriteReg(0x4000f014,18,15, (0x0f&(x)))
 	DCDC_CONFIG_SETTING(0x0a);
-
-	#define DCDC_REF_CLK_SETTING(x) subWriteReg(0x4000f014,25,25, (0x01&(x)))
 	DCDC_REF_CLK_SETTING(1);
-
-	#define DIG_LDO_CURRENT_SETTING(x) subWriteReg(0x4000f014,22,21, (0x03&(x)))
 	DIG_LDO_CURRENT_SETTING(0x01);
-
-	hal_pwrmgr_RAM_retention_set(0x00);
-	hal_pwrmgr_LowCurrentLdo_enable();
+	HAL_PWRMGR_RAM_RETENTION_SET(0x00);
+	HAL_PWRMGR_LOWCURRENTLDO_ENABLE(1);
 }
 
 void hal_rtc_clock_config(CLK32K_e clk32Mode) {
@@ -397,27 +409,91 @@ void hal_gpio_write(gpio_pin_e pin, uint8_t en) {
 	}
 }
 
+void debug_blink(uint32_t nblink) {
+	gpio_pin_e pin = P3; // LED is on pin 3
+	hal_gpioretention_register(pin);
+	while(nblink--) {
+		hal_gpio_write(pin, 1);
+		WaitRTCCount(5*MSEC);
+		hal_gpio_write(pin, 0);
+		WaitRTCCount(195*MSEC);
+	}
+	WaitRTCCount(500*MSEC);
+}
+void debug_blink3(void) { debug_blink(3); }
+void debug_blink5(void) { debug_blink(5); }
+
+void config_RTC(uint32_t time) {
+	uint32_t tick_curr = RTC_TICK_CURRENT;
+	WaitRTCCount(1); //align to rtc clock edge
+	AP_AON->RTCCC0 = tick_curr + time;  //set RTC comparator0 value
+	//enable (20) comparator0 event, (18) counter overflow interrupt, (15) comparator0 interrupt
+	AP_AON->RTCCTL |= (BIT(15) | BIT(18) | BIT(20));
+}
+
+void enterSleep(uint32_t time) {
+	ENABLE_SOFTWARE_CONTROL(0x00); //disable
+	config_RTC(time);
+	SET_SLEEP_FLAG;
+	ENTER_SYSTEM_SLEEP_MODE;
+	//__WFI();
+}
+
 
 void app_main() {
-	// LED is on pin 3
-	gpio_pin_e pin = P3;
+	gpio_pin_e pin = P3; // LED is on pin 3
 	hal_gpioretention_register(pin);
 	int pin_status = 0;
 	while(1) {
 		pin_status = (pin_status +1) %2;
 		hal_gpio_write(pin, pin_status);
-		WaitRTCCount(10000);
+		if(pin_status) {
+			WaitRTCCount(5*MSEC);
+		}
+		else {
+			enterSleepProcess(1*SEC);
+		}
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
 int main(void) {
+	uint32_t* pJump_table = (uint32_t*)(JUMPTABLE_BASE_ADDR);
+	uint32_t* pGlobal_config = (uint32_t*)(CONFIG_BASE_ADDR);
+
+	for(int i = 0; i < 256; i++) { // global config and jump table are both 256 elements
+		switch(i) {
+		case 61:  // ENTER_SLEEP_PROCESS called by enterSleepProcess()
+		case 63:  // CONFIG_RTC called by enterSleepProcess()
+		case 64:  // ENTER_SLEEP_OFF_MODE called by enterSleepProcess()
+		case 100: // APP_SLEEP_PROCESS called by enterSleepProcess()
+		case 212: // called by drv_irq_init()
+		case 213: // called by drv_enable_irq()
+			pJump_table[i] = 0;
+			break;
+		default:
+			pJump_table[i] = (uint32_t)debug_blink3;
+			break;
+		}
+
+		pGlobal_config[i] = 0;
+	}
+	
+	pGlobal_config[34] = (uint32_t)&__initial_sp; // INITIAL_STACK_PTR
+	// sleep times, in us
+	pGlobal_config[5] = 30000000; // MAX_SLEEP_TIME
+	pGlobal_config[6] = 1600; // MIN_SLEEP_TIME
+	pGlobal_config[35] = 55;// 30.5 per tick // ALLOW_TO_SLEEP_TICK_RC32K
+
 	g_system_clk = SYS_CLK_XTAL_16M;//SYS_CLK_XTAL_16M;//SYS_CLK_DLL_64M;
 	g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL;//CLK_32K_XTAL,CLK_32K_RCOSC
+	
 	hal_init();
-	
 	hal_gpio_init();
-	
+
+	drv_irq_init();
+	drv_enable_irq();
+
 	app_main();
 
 	return 0; // should never reach

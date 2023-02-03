@@ -1,8 +1,12 @@
 /* Linker script to configure memory regions. */
 MEMORY
 {
-  RAM   (rwx) : ORIGIN = 0x1FFF6000, LENGTH = 0x2000
-  FLASH (rx)  : ORIGIN = 0x1FFF8000, LENGTH = 0x1F40
+  /*
+  JUMP_TABLE    (rwx) : ORIGIN = 0x1FFF0000, LENGTH = 0x400
+  GLOBAL_CONFIG (rwx) : ORIGIN = 0x1FFF0400, LENGTH = 0x400
+  */
+  FLASH         (rx)  : ORIGIN = 0x1FFF1838, LENGTH = 0x1F40
+  RAM           (rwx) : ORIGIN = 0x1FFF8000, LENGTH = 0x2000
 }
 
 
@@ -10,6 +14,18 @@ ENTRY(Reset_Handler)
 
 SECTIONS
 {
+        /*
+        .jump_table_mem_area :
+        {
+                KEEP(*(.jump_table_mem_area))
+        } > JUMP_TABLE
+
+        .global_config_area :
+        {
+                KEEP(*(.global_config_area))
+        } > GLOBAL_CONFIG
+        */
+
         .text :
         {
                 KEEP(*(.vectors))

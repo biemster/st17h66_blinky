@@ -5,11 +5,9 @@ import base64
 compiler = ['ARM','GCC'][1]
 if compiler == 'ARM':
     infile = './bin/Lenze_blinky.hex'
-    FF = '3818'
     print(f'Flashing firmware produced with Keil: {infile}')
 elif compiler == 'GCC':
     infile = './build/Blinky.hex'
-    FF = '0080'
     print(f'Flashing firmware produced with GCC: {infile}')
 
 irom1 = bytearray()
@@ -30,23 +28,23 @@ with open(infile) as f:
 
 c0 = bytearray() # hexf header
 
-c0.extend(bytearray.fromhex(f'01000000FFFFFFFF{FF}FF1FFFFFFFFF')) # blinky has only 1 ihex section
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
-c0.extend(bytearray.fromhex(f'00900000FFFF0000{FF}FF1FFFFFFFFF'))
+c0.extend(bytearray.fromhex('01000000FFFFFFFF3818FF1FFFFFFFFF')) # only 1 ihex section
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'))
+c0.extend(bytearray.fromhex('00900000FFFF00003818FF1FFFFFFFFF'))
 
 c0[-12:-10] = int.to_bytes(len(irom1), 2, 'little') # length ER_IROM1
 
@@ -92,7 +90,7 @@ cmds.append(b'spifs 0 1 3 0 ')
 cmds.append(b'sfmod 2 2 ')
 cmds.append(b'cpnum ffffffff ')
 cmds.append(b'cpbin c0 002000 ' + b'%x' % len(c0) + b' 11002000')
-cmds.append(b'cpbin c1 009000 ' + b'%x' % len(c1) + b' 11005000')
+cmds.append(b'cpbin c1 009000 ' + b'%x' % len(c1) + b' 11009000')
 
 for cmd in cmds:
     uart.write(cmd)

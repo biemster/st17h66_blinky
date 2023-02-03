@@ -49,6 +49,7 @@ $(BUILD)/$(BIN).elf: $(OBJS)
 $(BUILD)/$(BIN).hex: $(BUILD)/$(BIN).elf
 	@echo OBJCOPY $@
 	@$(OBJCOPY) -O ihex $^ $@
+#@sed -i "130i $$(head -1 $@)" $@ # The flasher needs to know when .text starts after the jump table and global config
 
 $(BUILD)/$(BIN).bin: $(BUILD)/$(BIN).elf
 	@echo OBJCOPY $@

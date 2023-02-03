@@ -159,7 +159,6 @@ const pFunc __Vectors[48] __attribute__((used, section(".vectors"))) = {
  *----------------------------------------------------------------------------*/
 void Reset_Handler(void) {
 	uint32_t *pSrc, *pDest;
-	uint32_t *pTable __attribute__((unused));
 	
 	SystemInit(); /* CMSIS System Initialization */
 	
