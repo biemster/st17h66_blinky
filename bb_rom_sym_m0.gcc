@@ -1,8 +1,5 @@
 WaitRTCCount = 0x00008901;
 clk_init = 0x0000a5ed;
-drv_enable_irq = 0x0000a99d;
-drv_irq_init = 0x0000a9c9;
 enableSleep = 0x0000aead;
-enterSleepProcess = 0x0000aeb9;
 setSleepMode = 0x00016b45;
 g_system_clk = 0x1fff0a4a;

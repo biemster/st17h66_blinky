@@ -180,6 +180,40 @@ typedef enum {
 	SYSTEM_OFF_MODE
 } Sleep_Mode;
 
+typedef enum IRQn {
+	/* -----  Cortex-M0 Processor Exceptions Numbers  ----- */
+	NonMaskableInt_IRQn = -14, /*  2 Non Maskable Interrupt */
+	HardFault_IRQn      = -13, /*  3 HardFault Interrupt */
+	SVCall_IRQn         =  -5, /* 11 SV Call Interrupt */
+	PendSV_IRQn         =  -2, /* 14 Pend SV Interrupt */
+	SysTick_IRQn        =  -1, /* 15 System Tick Interrupt */
+	/* -----  PHY BUMBEE M0 Interrupt Numbers  ----- */
+	BB_IRQn             =   4, /* Base band Interrupt */
+	KSCAN_IRQn          =   5, /* Key scan Interrupt */
+	RTC_IRQn            =   6, /* RTC Timer Interrupt */
+	WDT_IRQn            =  10, /* Watchdog Timer Interrupt */
+	UART0_IRQn          =  11, /* UART0 Interrupt */
+	I2C0_IRQn           =  12, /* I2C0 Interrupt */
+	I2C1_IRQn           =  13, /* I2C1 Interrupt */
+	SPI0_IRQn           =  14, /* SPI0 Interrupt */
+	SPI1_IRQn           =  15, /* SPI1 Interrupt */
+	GPIO_IRQn           =  16, /* GPIO Interrupt */
+	UART1_IRQn          =  17, /* UART1 Interrupt */
+	SPIF_IRQn           =  18, /* SPIF Interrupt */
+	DMAC_IRQn           =  19, /* DMAC Interrupt */
+	TIM1_IRQn           =  20, /* Timer1 Interrupt */
+	TIM2_IRQn           =  21, /* Timer2 Interrupt */
+	TIM3_IRQn           =  22, /* Timer3 Interrupt */
+	TIM4_IRQn           =  23, /* Timer4 Interrupt */
+	TIM5_IRQn           =  24, /* Timer5 Interrupt */
+	TIM6_IRQn           =  25, /* Timer6 Interrupt */
+	AES_IRQn            =  28, /* AES Interrupt */
+	ADCC_IRQn           =  29, /* ADC Interrupt */
+	QDEC_IRQn           =  30, /* QDEC Interrupt */
+	RNG_IRQn            =  31  /* RNG Interrupt */
+} IRQn_Type;
+#include "core_cm0.h" // hacky
+
 typedef struct {
 	volatile uint32_t PWROFF;        //0x00
 	volatile uint32_t PWRSLP;        //0x04
@@ -266,12 +300,10 @@ static gpio_Ctx_t m_gpioCtx = {
 	EXTERNAL VARIABLES
 */
 extern uint32_t  __initial_sp;
+extern void Reset_Handler(void);
 extern volatile sysclk_t g_system_clk;
 extern int clk_init(sysclk_t h_system_clk_sel);
-extern void drv_irq_init(void);
-extern int drv_enable_irq(void);
 extern void enableSleep(void);
-extern void enterSleepProcess(uint32_t time);
 extern void setSleepMode(Sleep_Mode mode);
 extern void WaitRTCCount(uint32_t rtcDelyCnt);
 
@@ -435,8 +467,8 @@ void enterSleep(uint32_t time) {
 	ENABLE_SOFTWARE_CONTROL(0x00); //disable
 	config_RTC(time);
 	SET_SLEEP_FLAG;
-	ENTER_SYSTEM_SLEEP_MODE;
-	//__WFI();
+	//ENTER_SYSTEM_SLEEP_MODE;
+	__WFI();
 }
 
 
@@ -451,7 +483,7 @@ void app_main() {
 			WaitRTCCount(5*MSEC);
 		}
 		else {
-			enterSleepProcess(1*SEC);
+			enterSleep(495*MSEC);
 		}
 	}
 }
@@ -469,6 +501,9 @@ int main(void) {
 		case 100: // APP_SLEEP_PROCESS called by enterSleepProcess()
 		case 212: // called by drv_irq_init()
 		case 213: // called by drv_enable_irq()
+			pJump_table[i] = 0;
+			break;
+		case 230: // called when RTC comparator0 is reached (event?)
 			pJump_table[i] = 0;
 			break;
 		default:
@@ -491,8 +526,10 @@ int main(void) {
 	hal_init();
 	hal_gpio_init();
 
-	drv_irq_init();
-	drv_enable_irq();
+	// CMSIS enable interrupts (device specific interrupt flags also need to be set!)
+	__enable_irq();
+	NVIC_SetPriority(RTC_IRQn, 1);
+	NVIC_EnableIRQ(RTC_IRQn);
 
 	app_main();
 
