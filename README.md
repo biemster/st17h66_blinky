@@ -8,5 +8,5 @@ It will start as a Keil project, but with the aim to move to GCC
 - [x] Reduce to just a single file, which turns on the LED
 - [x] Convert to GCC what we have so far
 - [x] Add a timer using IRQ to blink the LED
-- [ ] Activate deep sleep when the LED is off, without SRAM retention
-- [ ] Convert project to GCC
+- [x] Activate deep sleep when the LED is off
+- [ ] Convert project to single source file, GCC only

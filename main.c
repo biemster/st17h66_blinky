@@ -14,8 +14,8 @@
 #define write_reg(addr,data)             (*(volatile unsigned int*)(addr)=(unsigned int)(data))
 #define read_reg(addr)                   (*(volatile unsigned int*)(addr))
 #define subWriteReg(addr,high,low,value) write_reg(addr,read_reg(addr)&\
-										 ((~((((unsigned int)1<<((high)-(low)+1))-1)<<(low)))|\
-										 ((unsigned int)(value)<<(low))))
+										 (~((((unsigned int)1<<((high)-(low)+1))-1)<<(low)))|\
+										 ((unsigned int)(value)<<(low)))
 
 #define JUMPTABLE_BASE_ADDR 0x1fff0000
 #define CONFIG_BASE_ADDR 0x1fff0400
@@ -42,11 +42,11 @@
 #define HAL_PWRMGR_RAM_RETENTION_SET(x) subWriteReg(0x4000f01c,21,17, (((x) & 0xffffffe0) ? 0x00 : (x)))
 #define HAL_PWRMGR_LOWCURRENTLDO_ENABLE(x) subWriteReg(0x4000f014,26,26, (x));
 #define ENABLE_SOFTWARE_CONTROL(x) subWriteReg(&(AP_AON->PMCTL2_0),6,6, (x));
-#define RTC_TICK_CURRENT (*(volatile uint32_t*) 0x4000f028)
-#define SET_SLEEP_FLAG (*(volatile uint32_t*) 0x4000f0a8 |= 1)
-#define UNSET_SLEEP_FLAG (*(volatile uint32_t*) 0x4000f0a8 &= ~1)
-#define ENTER_SYSTEM_SLEEP_MODE (*(volatile uint32_t*) 0x4000f004 = 0xa5a55a5a)
-#define ENTER_SYSTEM_OFF_MODE (*(volatile uint32_t*) 0x4000f000 = 0x5a5aa5a5)
+#define RTC_TICK_CURRENT (AP_AON->RTCCNT)
+#define SET_SLEEP_FLAG (AP_AON->REG_S11 |= 1)
+#define UNSET_SLEEP_FLAG (AP_AON->REG_S11 &= ~1)
+#define ENTER_SYSTEM_SLEEP_MODE (AP_AON->PWRSLP = 0xA5A55A5A)
+#define ENTER_SYSTEM_OFF_MODE (AP_AON->PWROFF = 0x5A5AA5A5)
 
 #define SOFT_PARAMETER_NUM 256
 #define NUMBER_OF_PINS 23
@@ -212,7 +212,7 @@ typedef enum IRQn {
 	QDEC_IRQn           =  30, /* QDEC Interrupt */
 	RNG_IRQn            =  31  /* RNG Interrupt */
 } IRQn_Type;
-#include "core_cm0.h" // hacky
+#include "core_cm0.h"
 
 typedef struct {
 	volatile uint32_t PWROFF;        //0x00
@@ -283,6 +283,23 @@ typedef struct {
 /*********************************************************************
 	OSAL LARGE HEAP CONFIG
 */
+typedef uint8_t halDataAlign_t; //!< Used for byte alignment
+typedef struct {
+	// The 15 LSB's of 'val' indicate the total item size, including the header, in 8-bit bytes.
+	unsigned short len : 15;   // unsigned short len : 15;
+	// The 1 MSB of 'val' is used as a boolean to indicate in-use or freed.
+	unsigned short inUse : 1;  // unsigned short inUse : 1;
+} osalMemHdrHdr_t;
+
+typedef union {
+	/*  Dummy variable so compiler forces structure to alignment of largest element while not wasting
+		space on targets when the halDataAlign_t is smaller than a UINT16.
+	*/
+	halDataAlign_t alignDummy;
+	uint32_t val;            // uint16    // TODO: maybe due to 4 byte alignment requirement in M0, this union should be 4 byte, change from uint16 to uint32, investigate more later -  04-25
+	osalMemHdrHdr_t hdr;
+} osalMemHdr_t;
+
 #define LARGE_HEAP_SIZE (1*1024)
 ALIGN4_U8 g_largeHeap[LARGE_HEAP_SIZE];
 
@@ -303,6 +320,9 @@ extern uint32_t  __initial_sp;
 extern void Reset_Handler(void);
 extern volatile sysclk_t g_system_clk;
 extern int clk_init(sysclk_t h_system_clk_sel);
+extern void osal_mem_set_heap(osalMemHdr_t* hdr, uint32_t size);
+extern uint8_t osal_init_system( void );
+extern void osal_start_system( void );
 extern void enableSleep(void);
 extern void setSleepMode(Sleep_Mode mode);
 extern void WaitRTCCount(uint32_t rtcDelyCnt);
@@ -344,7 +364,7 @@ static void hal_low_power_io_init(void) {
 	DCDC_CONFIG_SETTING(0x0a);
 	DCDC_REF_CLK_SETTING(1);
 	DIG_LDO_CURRENT_SETTING(0x01);
-	HAL_PWRMGR_RAM_RETENTION_SET(0x00);
+	HAL_PWRMGR_RAM_RETENTION_SET(RET_SRAM0);
 	HAL_PWRMGR_LOWCURRENTLDO_ENABLE(1);
 }
 
@@ -362,10 +382,6 @@ void hal_rtc_clock_config(CLK32K_e clk32Mode) {
 		subWriteReg(&(AP_AON->PMCTL2_0),6,6,0x00);   //disable software control
 		subWriteReg(&(AP_AON->PMCTL0),31,27,0x16);
 	}
-
-	//ZQ 20200812 for rc32k wakeup
-	subWriteReg(&(AP_AON->PMCTL0),28,28,0x1);//turn on 32kxtal
-	subWriteReg(&(AP_AON->PMCTL1),18,17,0x0);// reduce 32kxtl bias current
 }
 
 static void hal_init(void) {
@@ -448,9 +464,10 @@ void debug_blink(uint32_t nblink) {
 		hal_gpio_write(pin, 1);
 		WaitRTCCount(5*MSEC);
 		hal_gpio_write(pin, 0);
-		WaitRTCCount(195*MSEC);
+		if(nblink) {
+			WaitRTCCount(195*MSEC);
+		}
 	}
-	WaitRTCCount(500*MSEC);
 }
 void debug_blink3(void) { debug_blink(3); }
 void debug_blink5(void) { debug_blink(5); }
@@ -463,30 +480,16 @@ void config_RTC(uint32_t time) {
 	AP_AON->RTCCTL |= (BIT(15) | BIT(18) | BIT(20));
 }
 
-void enterSleep(uint32_t time) {
-	ENABLE_SOFTWARE_CONTROL(0x00); //disable
-	config_RTC(time);
-	SET_SLEEP_FLAG;
-	//ENTER_SYSTEM_SLEEP_MODE;
-	__WFI();
-}
-
-
-void app_main() {
+void Blink_IRQHandler() {
 	gpio_pin_e pin = P3; // LED is on pin 3
 	hal_gpioretention_register(pin);
-	int pin_status = 0;
-	while(1) {
-		pin_status = (pin_status +1) %2;
-		hal_gpio_write(pin, pin_status);
-		if(pin_status) {
-			WaitRTCCount(5*MSEC);
-		}
-		else {
-			enterSleep(495*MSEC);
-		}
-	}
+	hal_gpio_write(pin, 1);
+	WaitRTCCount(5*MSEC);
+	hal_gpio_write(pin, 0);
+	config_RTC(5*SEC);
+	ENTER_SYSTEM_SLEEP_MODE;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 int main(void) {
@@ -495,14 +498,25 @@ int main(void) {
 
 	for(int i = 0; i < 256; i++) { // global config and jump table are both 256 elements
 		switch(i) {
+		case 1: // tasks init, should have an entry or osal crashes. Here abused as WAKEUP_PROCESS and sleep again
+			pJump_table[i] = (uint32_t)Blink_IRQHandler;
+			break;
+		case 2: // task array
+		case 3: // task count
+		case 4: // task events
+		case 5: // osal mem init, on wakeup
+		case 58: // LL_DIRECT_TEST_TX_TEST, called on wakeup and blocks
+		case 59: // LL_DIRECT_TEST_RX_TEST, called on wakeup and blocks
+		case 60:  // OSAL_POWER_CONSERVE called by osal_pwrmgr_powerconserve()
 		case 61:  // ENTER_SLEEP_PROCESS called by enterSleepProcess()
+		case 62:  // WAKEUP_PROCESS, called on wakeup and blocks
 		case 63:  // CONFIG_RTC called by enterSleepProcess()
 		case 64:  // ENTER_SLEEP_OFF_MODE called by enterSleepProcess()
 		case 100: // APP_SLEEP_PROCESS called by enterSleepProcess()
 		case 212: // called by drv_irq_init()
 		case 213: // called by drv_enable_irq()
-			pJump_table[i] = 0;
-			break;
+		case 214: // called by osal_pwrmgr_powerconserve()
+		case 228: // V4_IRQ_HANDLER
 		case 230: // called when RTC comparator0 is reached (event?)
 			pJump_table[i] = 0;
 			break;
@@ -523,15 +537,24 @@ int main(void) {
 	g_system_clk = SYS_CLK_XTAL_16M;//SYS_CLK_XTAL_16M;//SYS_CLK_DLL_64M;
 	g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL;//CLK_32K_XTAL,CLK_32K_RCOSC
 	
+	osal_mem_set_heap((osalMemHdr_t*)g_largeHeap, LARGE_HEAP_SIZE);
 	hal_init();
 	hal_gpio_init();
 
 	// CMSIS enable interrupts (device specific interrupt flags also need to be set!)
 	__enable_irq();
-	NVIC_SetPriority(RTC_IRQn, 1);
+	NVIC_SetPriority(RTC_IRQn, IRQ_PRIO_HIGH);
 	NVIC_EnableIRQ(RTC_IRQn);
-
-	app_main();
+	
+	config_RTC(3); // fire RTC irq as fast as you can
+	ENABLE_SOFTWARE_CONTROL(0x00); // software control disable
+	SET_SLEEP_FLAG;
+	AP_AON->SLEEP_R[0] = 4; //RSTC_WAKE_RTC;
+	
+	/* Initialize the operating system */
+	osal_init_system();
+	/* Start OSAL */
+	osal_start_system(); // No Return from here
 
 	return 0; // should never reach
 }

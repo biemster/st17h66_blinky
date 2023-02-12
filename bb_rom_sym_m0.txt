@@ -2,5 +2,8 @@
 0x00008901 T WaitRTCCount
 0x0000a5ed T clk_init
 0x0000aead T enableSleep
+0x00014aed T osal_init_system
+0x00014cb5 T osal_mem_set_heap
+0x00015285 T osal_start_system
 0x00016b45 T setSleepMode
 0x1fff0a4a D g_system_clk

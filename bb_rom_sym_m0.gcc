@@ -1,5 +1,8 @@
 WaitRTCCount = 0x00008901;
 clk_init = 0x0000a5ed;
 enableSleep = 0x0000aead;
+osal_init_system = 0x00014aed;
+osal_mem_set_heap = 0x00014cb5;
+osal_start_system = 0x00015285;
 setSleepMode = 0x00016b45;
 g_system_clk = 0x1fff0a4a;
