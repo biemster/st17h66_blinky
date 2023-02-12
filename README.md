@@ -10,4 +10,21 @@ It will start as a Keil project, but with the aim to move to GCC
 - [x] Add a timer using IRQ to blink the LED
 - [x] Activate deep sleep when the LED is off
 - [X] Convert project to single source file, GCC only
-- [ ] Compilation instructions
+- [x] Compilation instructions
+
+# How to compile and flash
+The compiled firmware is available in the `build/` directory, but can be compiled easily.
+You will need an ARM GCC compiler and utils, like `arm-none-eabi-` on Linux, and the CMSIS headers:
+```bash
+$ git clone https://github.com/ARM-software/CMSIS_5
+$ git clone https://github.com/biemster/st17h66_blinky
+$ cd st17h66_blinky
+$ make
+```
+To flash to the ST17h66, connect an UART to P9 and P10 (pin 5 and 6), and run
+```bash
+$ ./flash_st17h66.py
+```
+It has an USB UART hardcoded on `/dev/ttyUSB0`, so if your UART lives somewhere else you'll need to change this.
+
+This repository is now considered finished, and will not likely recieve updates besides bug fixes. Further developtments will be done on https://github.com/biemster/st17h66_RF/.
