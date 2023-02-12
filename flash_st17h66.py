@@ -2,16 +2,8 @@
 import sys,time
 import base64
 
-compiler = ['ARM','GCC'][1]
-if compiler == 'ARM':
-    infile = './bin/Lenze_blinky.hex'
-    print(f'Flashing firmware produced with Keil: {infile}')
-elif compiler == 'GCC':
-    infile = './build/Blinky.hex'
-    print(f'Flashing firmware produced with GCC: {infile}')
-
 irom1 = bytearray()
-with open(infile) as f:
+with open('./build/Blinky.hex') as f:
     # hex file order is assumed to be ER_ROM_XIP - JUMP_TABLE - ER_IROM1
     sections = ['ER_IROM1']
     infiles = [irom1]

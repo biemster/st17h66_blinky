@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef __GCC
+#ifdef __GNUC__
 	#define ALIGN4_U8 _Alignas(4) uint8_t
 	#define JUMP_TABLE_MEM_AREA ".jump_table_mem_area"
 	#define GLOBAL_CONFIG_AREA ".global_config_area"
@@ -16,6 +16,9 @@
 #define subWriteReg(addr,high,low,value) write_reg(addr,read_reg(addr)&\
 										 (~((((unsigned int)1<<((high)-(low)+1))-1)<<(low)))|\
 										 ((unsigned int)(value)<<(low)))
+
+#define  XTAL            ( 5000000U)      /* Oscillator frequency             */
+#define  SYSTEM_CLOCK    (5 * XTAL)
 
 #define JUMPTABLE_BASE_ADDR 0x1fff0000
 #define CONFIG_BASE_ADDR 0x1fff0400
@@ -54,9 +57,7 @@
 #define SEC 32768
 
 
-//uint32_t* jump_table_base[256] __attribute__((section(JUMP_TABLE_MEM_AREA))) = {0};
-//uint32_t global_config[SOFT_PARAMETER_NUM] __attribute__((section(GLOBAL_CONFIG_AREA))) __attribute__((used)) = {0};
-
+typedef void (*pFunc)(void);
 
 typedef enum {
 	GPIO_P00   =   0,    P0  =  GPIO_P00,
@@ -301,11 +302,17 @@ typedef union {
 } osalMemHdr_t;
 
 #define LARGE_HEAP_SIZE (1*1024)
+#define __STACK_SIZE 0x00000400
+#define __HEAP_SIZE 0x00000C00
+
 ALIGN4_U8 g_largeHeap[LARGE_HEAP_SIZE];
+static uint8_t stack[__STACK_SIZE] __attribute__((aligned(8), used, section(".stack")));
+static uint8_t heap[__HEAP_SIZE] __attribute__((aligned(8), used, section(".heap")));
 
 /*********************************************************************
 	GLOBAL VARIABLES
 */
+uint32_t SystemCoreClock = SYSTEM_CLOCK;  /* System Core Clock Frequency      */
 volatile uint8_t g_clk32K_config;
 volatile sysclk_t g_spif_clk_config;
 static gpio_Ctx_t m_gpioCtx = {
@@ -316,7 +323,14 @@ static gpio_Ctx_t m_gpioCtx = {
 /*********************************************************************
 	EXTERNAL VARIABLES
 */
-extern uint32_t  __initial_sp;
+extern uint32_t __etext;
+extern uint32_t __data_start__;
+extern uint32_t __data_end__;
+extern uint32_t __bss_start__;
+extern uint32_t __bss_end__;
+extern uint32_t __StackTop;
+
+extern void _start(void) __attribute__((noreturn)); /* PreeMain (C library entry point) */
 extern void Reset_Handler(void);
 extern volatile sysclk_t g_system_clk;
 extern int clk_init(sysclk_t h_system_clk_sel);
@@ -326,6 +340,124 @@ extern void osal_start_system( void );
 extern void enableSleep(void);
 extern void setSleepMode(Sleep_Mode mode);
 extern void WaitRTCCount(uint32_t rtcDelyCnt);
+
+const pFunc __initial_sp = (pFunc)(&__StackTop);
+
+void Default_Handler(void) __attribute__((noreturn));
+void Reset_Handler(void) __attribute__((noreturn));
+void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
+void HardFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
+void SVC_Handler(void) __attribute__((weak, alias("Default_Handler")));
+void PendSV_Handler(void) __attribute__((weak, alias("Default_Handler")));
+void SysTick_Handler(void) __attribute__((weak, alias("Default_Handler")));
+
+void WDT_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void RTC_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void TIM0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void TIM2_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void MCIA_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void MCIB_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void UART0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void UART1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void UART2_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void UART3_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void UART4_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void AACI_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void CLCD_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void ENET_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void USBDC_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void USBHC_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void CHLCD_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void FLEXRAY_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void CAN_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void LIN_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void I2C_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void CPU_CLCD_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+void SPI_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+
+/*----------------------------------------------------------------------------
+	Exception / Interrupt Vector table
+ *----------------------------------------------------------------------------*/
+extern const pFunc __Vectors[48];
+const pFunc __Vectors[48] __attribute__((used, section(".vectors"))) = {
+	(pFunc)(&__StackTop), /*     Initial Stack Pointer */
+	Reset_Handler,        /*     Reset Handler */
+	NMI_Handler,          /* -14 NMI Handler */
+	HardFault_Handler,    /* -13 Hard Fault Handler */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	SVC_Handler,          /*  -5 SVCall Handler */
+	0,                    /*     Reserved */
+	0,                    /*     Reserved */
+	PendSV_Handler,       /*  -2 PendSV Handler */
+	SysTick_Handler,      /*  -1 SysTick Handler */
+
+	/* Interrupts */
+	WDT_IRQHandler,   /*   0 Interrupt 0 */
+	RTC_IRQHandler,   /*   1 Interrupt 1 */
+	TIM0_IRQHandler,  /*   2 Interrupt 2 */
+	TIM2_IRQHandler,  /*   3 Interrupt 3 */
+	MCIA_IRQHandler,  /*   4 Interrupt 4 */
+	MCIB_IRQHandler,  /*   5 Interrupt 5 */
+	UART0_IRQHandler, /*   6 Interrupt 6 */
+	UART1_IRQHandler, /*   7 Interrupt 7 */
+	UART2_IRQHandler, /*   8 Interrupt 8 */
+	UART3_IRQHandler, /*   9 Interrupt 9 */
+	UART4_IRQHandler, /*   10 Interrupt 10 */
+	AACI_IRQHandler,  /*   10 Interrupt 10 */
+	CLCD_IRQHandler,
+	ENET_IRQHandler,
+	USBDC_IRQHandler,
+	USBHC_IRQHandler,
+	CHLCD_IRQHandler,
+	FLEXRAY_IRQHandler,
+	CAN_IRQHandler,
+	LIN_IRQHandler,
+	I2C_IRQHandler,
+	CPU_CLCD_IRQHandler,
+	SPI_IRQHandler,
+};
+
+void SystemCoreClockUpdate (void) {
+	SystemCoreClock = SYSTEM_CLOCK;
+}
+
+void SystemInit (void) {
+	SystemCoreClock = SYSTEM_CLOCK;
+}
+
+void Reset_Handler(void) {
+	uint32_t *pSrc, *pDest;
+	
+	SystemInit(); /* CMSIS System Initialization */
+	
+	pSrc = &__etext;
+	pDest = &__data_start__;
+	for (; pDest < &__data_end__;) {
+			*pDest++ = *pSrc++;
+	}
+
+	pDest = &__bss_start__;
+	for (; pDest < &__bss_end__;) {
+			*pDest++ = 0UL;
+	}
+
+	_start(); /* Enter PreeMain (C library entry point) */
+}
+
+void Default_Handler(void) {
+	while (1);
+}
+
+void _exit(int status) {
+	(void)status;
+	while (1);
+}
 
 
 void hal_gpio_pull_set(gpio_pin_e pin, gpio_pupd_e type) {

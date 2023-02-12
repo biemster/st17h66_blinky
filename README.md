@@ -9,4 +9,5 @@ It will start as a Keil project, but with the aim to move to GCC
 - [x] Convert to GCC what we have so far
 - [x] Add a timer using IRQ to blink the LED
 - [x] Activate deep sleep when the LED is off
-- [ ] Convert project to single source file, GCC only
+- [X] Convert project to single source file, GCC only
+- [ ] Compilation instructions
