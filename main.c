@@ -1,14 +1,11 @@
+#include "ARMCM0.h"
 #include <stdint.h>
 #include <string.h>
 
 #ifdef __GNUC__
 	#define ALIGN4_U8 _Alignas(4) uint8_t
-	#define JUMP_TABLE_MEM_AREA ".jump_table_mem_area"
-	#define GLOBAL_CONFIG_AREA ".global_config_area"
 #else
 	#define ALIGN4_U8 __align(4) uint8_t
-	#define JUMP_TABLE_MEM_AREA "jump_table_mem_area"
-	#define GLOBAL_CONFIG_AREA "global_config_area"
 #endif
 
 #define write_reg(addr,data)             (*(volatile unsigned int*)(addr)=(unsigned int)(data))
@@ -33,6 +30,7 @@
 #define __NVIC_PRIO_BITS  2U /* Number of Bits used for Priority Levels */
 #define IRQ_PRIO_REALTIME 0
 #define IRQ_PRIO_HIGH     1
+#define RTC_IRQn          6
 
 #define BIT(n) (1ul << (n))
 #define RET_SRAM0 BIT(0)  /*32K, 0x1fff0000~0x1fff7fff*/
@@ -181,40 +179,6 @@ typedef enum {
 	SYSTEM_OFF_MODE
 } Sleep_Mode;
 
-typedef enum IRQn {
-	/* -----  Cortex-M0 Processor Exceptions Numbers  ----- */
-	NonMaskableInt_IRQn = -14, /*  2 Non Maskable Interrupt */
-	HardFault_IRQn      = -13, /*  3 HardFault Interrupt */
-	SVCall_IRQn         =  -5, /* 11 SV Call Interrupt */
-	PendSV_IRQn         =  -2, /* 14 Pend SV Interrupt */
-	SysTick_IRQn        =  -1, /* 15 System Tick Interrupt */
-	/* -----  PHY BUMBEE M0 Interrupt Numbers  ----- */
-	BB_IRQn             =   4, /* Base band Interrupt */
-	KSCAN_IRQn          =   5, /* Key scan Interrupt */
-	RTC_IRQn            =   6, /* RTC Timer Interrupt */
-	WDT_IRQn            =  10, /* Watchdog Timer Interrupt */
-	UART0_IRQn          =  11, /* UART0 Interrupt */
-	I2C0_IRQn           =  12, /* I2C0 Interrupt */
-	I2C1_IRQn           =  13, /* I2C1 Interrupt */
-	SPI0_IRQn           =  14, /* SPI0 Interrupt */
-	SPI1_IRQn           =  15, /* SPI1 Interrupt */
-	GPIO_IRQn           =  16, /* GPIO Interrupt */
-	UART1_IRQn          =  17, /* UART1 Interrupt */
-	SPIF_IRQn           =  18, /* SPIF Interrupt */
-	DMAC_IRQn           =  19, /* DMAC Interrupt */
-	TIM1_IRQn           =  20, /* Timer1 Interrupt */
-	TIM2_IRQn           =  21, /* Timer2 Interrupt */
-	TIM3_IRQn           =  22, /* Timer3 Interrupt */
-	TIM4_IRQn           =  23, /* Timer4 Interrupt */
-	TIM5_IRQn           =  24, /* Timer5 Interrupt */
-	TIM6_IRQn           =  25, /* Timer6 Interrupt */
-	AES_IRQn            =  28, /* AES Interrupt */
-	ADCC_IRQn           =  29, /* ADC Interrupt */
-	QDEC_IRQn           =  30, /* QDEC Interrupt */
-	RNG_IRQn            =  31  /* RNG Interrupt */
-} IRQn_Type;
-#include "core_cm0.h"
-
 typedef struct {
 	volatile uint32_t PWROFF;        //0x00
 	volatile uint32_t PWRSLP;        //0x04
@@ -345,35 +309,6 @@ const pFunc __initial_sp = (pFunc)(&__StackTop);
 
 void Default_Handler(void) __attribute__((noreturn));
 void Reset_Handler(void) __attribute__((noreturn));
-void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void HardFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void SVC_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void PendSV_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void SysTick_Handler(void) __attribute__((weak, alias("Default_Handler")));
-
-void WDT_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void RTC_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void TIM0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void TIM2_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void MCIA_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void MCIB_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void UART0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void UART1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void UART2_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void UART3_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void UART4_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void AACI_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void CLCD_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void ENET_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void USBDC_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void USBHC_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void CHLCD_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void FLEXRAY_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void CAN_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void LIN_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void I2C_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void CPU_CLCD_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void SPI_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 
 /*----------------------------------------------------------------------------
 	Exception / Interrupt Vector table
@@ -382,59 +317,17 @@ extern const pFunc __Vectors[48];
 const pFunc __Vectors[48] __attribute__((used, section(".vectors"))) = {
 	(pFunc)(&__StackTop), /*     Initial Stack Pointer */
 	Reset_Handler,        /*     Reset Handler */
-	NMI_Handler,          /* -14 NMI Handler */
-	HardFault_Handler,    /* -13 Hard Fault Handler */
-	0,                    /*     Reserved */
-	0,                    /*     Reserved */
-	0,                    /*     Reserved */
-	0,                    /*     Reserved */
-	0,                    /*     Reserved */
-	0,                    /*     Reserved */
-	0,                    /*     Reserved */
-	SVC_Handler,          /*  -5 SVCall Handler */
-	0,                    /*     Reserved */
-	0,                    /*     Reserved */
-	PendSV_Handler,       /*  -2 PendSV Handler */
-	SysTick_Handler,      /*  -1 SysTick Handler */
-
-	/* Interrupts */
-	WDT_IRQHandler,   /*   0 Interrupt 0 */
-	RTC_IRQHandler,   /*   1 Interrupt 1 */
-	TIM0_IRQHandler,  /*   2 Interrupt 2 */
-	TIM2_IRQHandler,  /*   3 Interrupt 3 */
-	MCIA_IRQHandler,  /*   4 Interrupt 4 */
-	MCIB_IRQHandler,  /*   5 Interrupt 5 */
-	UART0_IRQHandler, /*   6 Interrupt 6 */
-	UART1_IRQHandler, /*   7 Interrupt 7 */
-	UART2_IRQHandler, /*   8 Interrupt 8 */
-	UART3_IRQHandler, /*   9 Interrupt 9 */
-	UART4_IRQHandler, /*   10 Interrupt 10 */
-	AACI_IRQHandler,  /*   10 Interrupt 10 */
-	CLCD_IRQHandler,
-	ENET_IRQHandler,
-	USBDC_IRQHandler,
-	USBHC_IRQHandler,
-	CHLCD_IRQHandler,
-	FLEXRAY_IRQHandler,
-	CAN_IRQHandler,
-	LIN_IRQHandler,
-	I2C_IRQHandler,
-	CPU_CLCD_IRQHandler,
-	SPI_IRQHandler,
+	0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,
 };
-
-void SystemCoreClockUpdate (void) {
-	SystemCoreClock = SYSTEM_CLOCK;
-}
-
-void SystemInit (void) {
-	SystemCoreClock = SYSTEM_CLOCK;
-}
 
 void Reset_Handler(void) {
 	uint32_t *pSrc, *pDest;
 	
-	SystemInit(); /* CMSIS System Initialization */
+	SystemCoreClock = SYSTEM_CLOCK;
 	
 	pSrc = &__etext;
 	pDest = &__data_start__;
@@ -448,10 +341,6 @@ void Reset_Handler(void) {
 	}
 
 	_start(); /* Enter PreeMain (C library entry point) */
-}
-
-void Default_Handler(void) {
-	while (1);
 }
 
 void _exit(int status) {

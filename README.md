@@ -28,3 +28,4 @@ $ ./flash_st17h66.py
 It has an USB UART hardcoded on `/dev/ttyUSB0`, so if your UART lives somewhere else you'll need to change this.
 
 This repository is now considered finished, and will not likely recieve updates besides bug fixes. Further developtments will be done on https://github.com/biemster/st17h66_RF/.
+The code is cleaned to a point where it might be difficult to build applications on top, check the history to find for example where the UART code is removed.
